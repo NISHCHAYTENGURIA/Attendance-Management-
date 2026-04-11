@@ -1018,6 +1018,173 @@ const [modifyMsg, setModifyMsg] = useState("");
   );
 }
 
+// ============================================================
+// 👤 REGISTRATION APPROVALS — Admin approves/rejects pending registrations
+// ============================================================
+function RegistrationApprovals({ allUsers = [], saveUsers, theme, dark }) {
+  const [filterRole, setFilterRole] = useState("all");
+  const [rejectModal, setRejectModal] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [actionMsg, setActionMsg] = useState("");
+
+  // Get pending (unapproved) registrations
+  const pendingUsers = allUsers.filter(u => u.approved === false);
+  const filtered = filterRole === "all" ? pendingUsers : pendingUsers.filter(u => u.role === filterRole);
+
+  const roleColor = { student: "#6366f1", teacher: "#8b5cf6", admin: "#ec4899" };
+
+  const handleApprove = (userId) => {
+    const updated = allUsers.map(u => u.id === userId ? { ...u, approved: true, approvedAt: new Date().toISOString() } : u);
+    saveUsers(updated);
+    setActionMsg(`✅ Registration approved!`);
+    setTimeout(() => setActionMsg(""), 3000);
+  };
+
+  const handleReject = (userId) => {
+    if (!rejectReason.trim()) {
+      alert("Please provide a reason for rejection!");
+      return;
+    }
+    const updated = allUsers.map(u => u.id === userId ? { ...u, approved: false, rejected: true, rejectionReason: rejectReason, rejectedAt: new Date().toISOString() } : u);
+    saveUsers(updated);
+    setRejectModal(null);
+    setRejectReason("");
+    setActionMsg(`❌ Registration rejected`);
+    setTimeout(() => setActionMsg(""), 3000);
+  };
+
+  return (
+    <div style={{ animation: "slideUp 0.3s ease both" }}>
+      {/* Header Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
+        {[
+          { label: "Pending", value: pendingUsers.length, color: "#fbbf24", bg: "rgba(251,191,36,0.1)" },
+          { label: "Students", value: pendingUsers.filter(u => u.role === "student").length, color: "#6366f1", bg: "rgba(99,102,241,0.1)" },
+          { label: "Teachers", value: pendingUsers.filter(u => u.role === "teacher").length, color: "#8b5cf6", bg: "rgba(139,92,246,0.1)" },
+        ].map((stat, i) => (
+          <div key={stat.label} style={{ background: stat.bg, border: `1px solid ${stat.color}30`, borderRadius: 14, padding: "16px 20px", animation: `slideUp 0.3s ease ${i * 60}ms both` }}>
+            <div style={{ fontSize: 10, color: stat.color, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{stat.label}</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: stat.color, fontFamily: "monospace" }}>{stat.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filter + Status Message */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div style={{ display: "flex", gap: 8 }}>
+          {["all", "student", "teacher"].map(r => (
+            <button key={r} onClick={() => setFilterRole(r)}
+              style={{ padding: "6px 16px", borderRadius: 99, border: `1px solid ${filterRole === r ? (roleColor[r] || theme.accent) : theme.border}`, background: filterRole === r ? `${roleColor[r] || theme.accent}20` : "transparent", color: filterRole === r ? (roleColor[r] || theme.accent) : theme.muted, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Space Grotesk', sans-serif", textTransform: "capitalize" }}>
+              {r === "all" ? "All" : r}
+            </button>
+          ))}
+        </div>
+        {actionMsg && (
+          <div style={{ fontSize: 12, color: actionMsg.includes("✅") ? "#4ade80" : "#f87171", fontWeight: 700, fontFamily: "monospace" }}>
+            {actionMsg}
+          </div>
+        )}
+      </div>
+
+      {/* Pending Registrations List */}
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 20px", background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 16 }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>✓</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: theme.text, marginBottom: 4 }}>All Done!</div>
+          <div style={{ fontSize: 13, color: theme.muted }}>
+            {pendingUsers.length === 0 ? "No pending registrations" : "All registrations in this category have been reviewed"}
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 12 }}>
+          {filtered.map((u, i) => (
+            <div key={u.id} style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 16, padding: 20, animation: `slideUp 0.3s ease ${i * 50}ms both`, transition: "all 0.2s ease" }}>
+              {/* Header with Role Badge */}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: `linear-gradient(135deg, ${roleColor[u.role]}, #6366f1)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: "white", flexShrink: 0 }}>
+                  {u.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: theme.text, marginBottom: 2 }}>{u.name}</div>
+                  <span style={{ display: "inline-block", fontSize: 10, padding: "2px 10px", borderRadius: 99, background: `${roleColor[u.role]}20`, color: roleColor[u.role], fontWeight: 700, textTransform: "capitalize" }}>
+                    {u.role}
+                  </span>
+                </div>
+              </div>
+
+              {/* Details */}
+              <div style={{ background: theme.surface2, borderRadius: 12, padding: 12, marginBottom: 14, fontSize: 12 }}>
+                <div style={{ marginBottom: 6, color: theme.muted }}>
+                  <span style={{ fontWeight: 600 }}>Email:</span> {u.email}
+                </div>
+                {u.rollNumber && (
+                  <div style={{ marginBottom: 6, color: theme.muted }}>
+                    <span style={{ fontWeight: 600 }}>Roll:</span> {u.rollNumber}
+                  </div>
+                )}
+                {u.department && (
+                  <div style={{ marginBottom: 6, color: theme.muted }}>
+                    <span style={{ fontWeight: 600 }}>Dept:</span> {u.department}
+                  </div>
+                )}
+                {u.semester && (
+                  <div style={{ color: theme.muted }}>
+                    <span style={{ fontWeight: 600 }}>Semester:</span> {u.semester}
+                  </div>
+                )}
+              </div>
+
+              {/* Registration Time */}
+              {u.registeredAt && (
+                <div style={{ fontSize: 10, color: theme.muted, marginBottom: 14, fontFamily: "monospace" }}>
+                  Registered: {new Date(u.registeredAt).toLocaleDateString("en-IN")} {new Date(u.registeredAt).toLocaleTimeString("en-IN")}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => handleApprove(u.id)}
+                  style={{ flex: 1, padding: "10px", borderRadius: 10, background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)", color: "#4ade80", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "'Space Grotesk', sans-serif" }}>
+                  ✓ Approve
+                </button>
+                <button onClick={() => setRejectModal(u.id)}
+                  style={{ flex: 1, padding: "10px", borderRadius: 10, background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "'Space Grotesk', sans-serif" }}>
+                  ✕ Reject
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Rejection Modal */}
+      {rejectModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999, backdropFilter: "blur(8px)" }}>
+          <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 20, padding: 28, width: 420, maxWidth: "90vw", animation: "slideUp 0.3s ease both" }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#f87171", marginBottom: 4 }}>⚠ Reject Registration</div>
+            <div style={{ fontSize: 12, color: theme.muted, marginBottom: 16 }}>Please provide a reason for rejection</div>
+
+            <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="e.g., Duplicate account, Invalid email, Missing documents, etc."
+              rows={4}
+              style={{ width: "100%", padding: "10px 14px", background: theme.surface2, border: `1px solid ${theme.border}`, borderRadius: 10, color: theme.text, fontSize: 13, fontFamily: "'Space Grotesk', sans-serif", outline: "none", resize: "none", marginBottom: 14 }} />
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setRejectModal(null)}
+                style={{ flex: 1, padding: "10px", borderRadius: 10, background: "transparent", border: `1px solid ${theme.border}`, color: theme.muted, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "'Space Grotesk', sans-serif" }}>
+                Cancel
+              </button>
+              <button onClick={() => handleReject(rejectModal)}
+                style={{ flex: 1, padding: "10px", borderRadius: 10, background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.4)", color: "#f87171", cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "'Space Grotesk', sans-serif" }}>
+                Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AttendanceTracker({ user, onLogout, allUsers = [], saveUsers, pendingRegistrations = 0 })
 {
   const [dark, setDark] = useState(true);
