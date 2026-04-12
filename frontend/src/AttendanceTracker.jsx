@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import AnalyticsContainer from "./AnalyticsContainer";
 // ============================================================
 // 📋 ATTENDANCE MODIFICATION REQUEST SYSTEM
 // Teacher request bhejega, Admin approve/reject karega
@@ -1436,20 +1437,7 @@ export default function AttendanceTracker({ user, onLogout, allUsers = [], saveU
             )}
 
             {!isTeacherOrAdmin && activePage === "analytics" && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
-                {subjects.map((s, i) => {
-                  const pct = calcPercent(s.classesAttended, s.totalClasses);
-                  return (
-                    <div key={s.subject} style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 16, padding: 18, animation: `slideUp 0.4s ease ${i * 60}ms both`, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-                      <DonutChart percentage={pct} size={90} dark={dark} />
-                      <div style={{ textAlign: "center" }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: theme.text, marginBottom: 2 }}>{s.subject}</div>
-                        <div style={{ fontSize: 10, color: theme.muted, fontFamily: "monospace" }}>{s.classesAttended}/{s.totalClasses}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <AnalyticsContainer subjects={subjects} dark={dark} theme={theme} />
             )}
 
           </div>
